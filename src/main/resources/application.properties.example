@@ -1,0 +1,19 @@
+server.port=8080
+
+# Database Configuration (Replace YOUR_MYSQL_USERNAME and YOUR_MYSQL_PASSWORD with your MySQL credentials)
+spring.datasource.url=jdbc:mysql://localhost:3306/smart_ration_queue?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=YOUR_MYSQL_PASSWORD
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# JPA / Hibernate Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.open-in-view=false
+
+# JWT Configuration
+jwt.secret=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+jwt.expiration-ms=86400000
+
+# CORS Configuration
+app.cors.allowed-origins=http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000
