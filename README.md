@@ -172,28 +172,6 @@ On the Login page (`http://localhost:5173/login`), quick-fill buttons are provid
 
 ---
 
-## 🛠️ 6. Core Business Rules Enforced
-
-1. **Capacity Guarantee:** No bookings are accepted beyond a slot's configured capacity (`bookedCount >= capacity`).
-2. **Shop Alignment:** A beneficiary can only book slots at their assigned Fair Price Shop.
-3. **No Duplicate Bookings:** Beneficiaries cannot book the same slot twice.
-4. **Time & Date Integrity:** Cannot book past dates or past times. Dealer slots must be exactly 30 minutes in duration, with `endTime > startTime`.
-5. **No Slot Overlaps:** Prevents overlapping slots on the same date for the same dealer.
-6. **Cancellation Safeguard:** Beneficiaries can only cancel their own bookings. Decreases `bookedCount` in an atomic database transaction. Prevents cancelling an already cancelled booking.
-7. **Stateless JWT Security:** Authentication state is held in standard HMAC-SHA256 tokens sent via `Authorization: Bearer <token>`. Role permissions are strictly enforced on the server.
-
----
-
-## 🔍 7. Troubleshooting Guide
-
-### Port 8080 already in use
-If you get `Web server failed to start. Port 8080 was already in use`:
-```powershell
-# In PowerShell:
-$conn = Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue
-if ($conn) { Stop-Process -Id $conn.OwningProcess -Force }
-```
-
 ### MySQL Connection Error / Access Denied
 1. Open `smart-ration-queue-backend/src/main/resources/application.properties`.
 2. Verify that `spring.datasource.password` matches your local MySQL password.
@@ -202,13 +180,5 @@ if ($conn) { Stop-Process -Id $conn.OwningProcess -Force }
    Get-Service -Name *mysql*
    ```
 
-### CORS Errors in Browser Console
-- The Spring Boot backend explicitly configures CORS in `SecurityConfig.java` allowing `http://localhost:5173` and `http://127.0.0.1:5173`.
-- Ensure frontend is running on Vite default port `5173`.
-- Ensure backend is running on `http://localhost:8080`.
 
-### 401 Unauthorized or 403 Forbidden
-- Ensure you have logged in with valid credentials.
-- The JWT is saved in `localStorage.getItem('srq_token')`.
-- If your token expires (24-hour validity), click **Logout** and log in again.
-- Role mismatch: Ensure you are logged into an account that has permission for that dashboard (e.g. only ADMIN can access `/admin`, only DEALER can access `/dealer`).
+
