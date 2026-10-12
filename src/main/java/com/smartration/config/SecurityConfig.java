@@ -1,3 +1,4 @@
+
 package com.smartration.config;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +29,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000}")
+    @Value("${app.cors.allowed-origins:https://smart-ration-queue-delta.vercel.app,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000}")
     private String allowedOrigins;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -41,43 +42,49 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        // Preflight options requests
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                // Allow CORS preflight requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Public endpoints
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/dealers", "/api/dealers/**").permitAll()
-                        .requestMatchers("/error").permitAll()
+                // Public authentication endpoints
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/dealers", "/api/dealers/**").permitAll()
+                .requestMatchers("/error").permitAll()
 
-                        // Admin endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // Admin endpoints
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // Dealer endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/queue-slots/dealer/**").hasAnyRole("DEALER", "ADMIN")
+                // Dealer endpoints
+                .requestMatchers(HttpMethod.POST, "/api/queue-slots/dealer/**")
+                    .hasAnyRole("DEALER", "ADMIN")
 
-                        // Beneficiary endpoints
-                        .requestMatchers("/api/bookings/**").hasRole("BENEFICIARY")
-                        .requestMatchers("/api/ration-cards/my-card").hasRole("BENEFICIARY")
+                // Beneficiary endpoints
+                .requestMatchers("/api/bookings/**").hasRole("BENEFICIARY")
+                .requestMatchers("/api/ration-cards/my-card").hasRole("BENEFICIARY")
 
-                        // Slots reading available to authenticated users
-                        .requestMatchers(HttpMethod.GET, "/api/queue-slots/**").authenticated()
+                // Slot reading requires authentication
+                .requestMatchers(HttpMethod.GET, "/api/queue-slots/**").authenticated()
 
-                        // Any other request must be authenticated
-                        .anyRequest().authenticated()
-                );
+                // All other endpoints require authentication
+                .anyRequest().authenticated()
+            );
 
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(
+            jwtAuthenticationFilter,
+            UsernamePasswordAuthenticationFilter.class
+        );
 
         return http.build();
     }
@@ -85,16 +92,34 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+            .map(String::trim)
+            .filter(origin -> !origin.isEmpty())
+            .toList();
+
         configuration.setAllowedOrigins(origins);
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin"));
+        configuration.setAllowedMethods(
+            Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+        );
+        configuration.setAllowedHeaders(
+            Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "X-Requested-With",
+                "Origin"
+            )
+        );
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source =
+            new UrlBasedCorsConfigurationSource();
+
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
     }
 }
